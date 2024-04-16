@@ -1,0 +1,143 @@
+/**
+ *	Utilities for handling HTML
+ *
+ *	@author	Saketh Korrapolu
+ *	@since November 9, 2020	
+ */
+public class HTMLUtilities {
+	// NONE = not nested in a block, COMMENT = inside a comment block
+	// PREFORMAT = inside a pre-format block
+	private enum TokenState {NONE, COMMENT, PREFORMAT};
+	// the current tokenizer state
+	private TokenState state = TokenState.NONE;
+	
+	/**
+	 *	Break the HTML string into tokens. The array returned is
+	 *	exactly the size of the number of tokens in the HTML string.
+	 *	Example:	HTML string = "Goodnight moon goodnight stars"
+	 *				returns { "Goodnight", "moon", "goodnight", "stars" }
+	 *	@param str			the HTML string
+	 *	@return				the String array of tokens
+	 */
+	public String[] tokenizeHTMLString(String str) {
+		// make the size of the array large to start
+		String[] result = new String[10000];
+		String[] finalResult;
+		int length = 0;
+		int index = 0;
+		int a = 0;
+		for(int i = 0; i < result.length; i++){
+			result[i] = "";
+		}
+		if(state == TokenState.COMMENT) {
+				do {
+					a++;
+				} while(a < str.length() && str.charAt(a) != '>');
+				if(a == str.length() && str.charAt(a-1) == '>') state = TokenState.NONE;
+				else if(a < str.length() && str.charAt(a) == '>') state = TokenState.NONE;
+			}
+		for(a = a; a < str.length(); a++){
+			char c = str.charAt(a);
+			if(c == '<' && state == TokenState.NONE) {
+				if(str.charAt(a + 1) == '!') {
+					state = TokenState.COMMENT;
+					do {
+						a++;
+					} while(a < str.length() && c != '>');
+					if(a == str.length() && str.charAt(a-1) == '>') state = TokenState.NONE;
+					else if(a < str.length() && str.charAt(a) == '>') state = TokenState.NONE;
+				}
+				else if(a < str.length() - 4 && str.charAt(a + 1) == 'p' && str.charAt(a + 2) == 'r' && str.charAt(a + 3) == 'e'
+						&& str.charAt(a + 4) == '>') {
+					state = TokenState.PREFORMAT;
+					a--;
+				}
+				else {
+					int n = a;
+					char ch;
+					do {
+						ch = str.charAt(n);
+						result[index] += ch;
+						n++;
+					} while(ch != '>');
+					a = n- 1;
+					index++;
+				}	
+			}
+			else if(state == TokenState.PREFORMAT) {
+				if(a < str.length() - 5 && str.charAt(a + 1) == '/' && str.charAt(a + 2) == 'p' && str.charAt(a + 3) == 'r' 
+						&& str.charAt(a + 4) == 'e' && str.charAt(a + 5) == '>') {
+					result[index] = "</pre";
+					a += 5;
+					state = TokenState.NONE;
+				}
+				while((a < str.length() - 5 && str.charAt(a + 1) != '/' && str.charAt(a + 2) != 'p' && str.charAt(a + 3) != 'r' 
+						&& str.charAt(a + 4) != 'e' && str.charAt(a + 5) != '>') || a < str.length()){
+						result[index] += str.charAt(a);
+						a++;
+					}
+			}
+			else if(Character.isLetter(c) && state == TokenState.NONE){
+				int n = a;
+				char ch;
+				do {
+					ch = str.charAt(n);
+					result[index] += ch;
+					n++;
+				} while(n < str.length() && Character.isLetter(str.charAt(n)) && str.charAt(n) != ' ' && str.charAt(n) != '<' && !isPunctucation(str.charAt(n)));
+				a = n - 1;
+				index++;
+			}
+			else if(((c > 47 && c < 58) || (a < str.length() - 1 && c == '-' && str.charAt(a + 1) != ' ')) && state == TokenState.NONE){
+				int n = a;
+				char ch;
+				do {
+					ch = str.charAt(n);
+					result[index] += ch;
+					n++;
+				} while(n < str.length() && (((str.charAt(n) > 47 && str.charAt(n) < 58)) 
+					|| (n < str.length() - 1 && str.charAt(n) == '.' && (str.charAt(n+1) > 47 && str.charAt(n+1) < 58)))
+					|| (n < str.length() && str.charAt(n) == 'e') || (n < str.length() && str.charAt(n) == '-'));	
+				a = n- 1;
+				index++;
+			}
+			else if((isPunctucation(c) || c == '-') && state == TokenState.NONE ){
+				result[index] += c;
+				index++;
+			}
+
+		}
+		while(result[length] != "")
+			length++;
+		
+
+		finalResult = new String[length];
+		for(int i = 0; i < length; i++){
+			finalResult[i] = result[i];
+		}
+		// return the correctly sized array
+		return finalResult;
+	}
+	
+	/**
+	 *	Print the tokens in the array to the screen
+	 *	Precondition: All elements in the array are valid String objects.
+	 *				(no nulls)
+	 *	@param tokens		an array of String tokens
+	 */
+	public void printTokens(String[] tokens) {
+		if (tokens == null) return;
+		for (int a = 0; a < tokens.length; a++) {
+			if (a % 5 == 0) System.out.print("\n  ");
+			System.out.print("[token " + a + "]: " + tokens[a] + " ");
+		}
+		System.out.println();
+	}
+
+	public boolean isPunctucation(char c) {
+		if(c == '.' || c == ',' || c == ';' || c == ':' || c == '(' || c == ')' || c == '?' || c == '!'
+		|| c == '=' || c == '&' || c == '~' || c == '+') return true;
+		return false;
+	}
+
+}
